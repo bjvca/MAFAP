@@ -60,6 +60,15 @@ sum(ext2013$ext*ext2013$w)/sum(ext2013$w)
 
 all2013 <- merge(all2013, ext2013, by="HHID")
 
+
+
+
+
+
+
+
+#################
+
 library(locfit)
 
 #pdf("~/data/projects/MAFAP/analysis/yields.pdf",sep=""))
@@ -74,7 +83,7 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion")
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.6,.6), xlim=c(5.2,7.3),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
@@ -87,8 +96,8 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
-lines(df[,1],df$fit, lty=4, col="red")
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.3,7.3))
+lines(df[,1],df$fit, lwd=3, col="red")
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
@@ -101,12 +110,13 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
-lines(df[,1],df$fit, lty=4, col="green")
+lines(df[,1],df$fit, lwd=3, col="green")
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
- quantile(log(all2013$yield[all2]), na.rm=T)
-
+rug(log(all2013$yield[  all2013$yield>0 & !is.na(all2013$yield)]))
+legend
+quantiles(log(all2013$yield[  all2013$yield>0 & !is.na(all2013$yield)]))
 
 
 
