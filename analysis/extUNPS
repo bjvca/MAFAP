@@ -1,0 +1,28 @@
+### look at average productivity of fertilizer among 
+library(foreign)
+prod <- read.dta("/home/bjvca/data/projects/PASIC/productivity/data/merged/productivity.dta")
+pext <- read.dta("/home/bjvca/data/projects/PASIC/data/final/pot/PSEC3EXT.dta")
+fert <- read.dta("/home/bjvca/data/projects/PASIC/data/final/pot/PSEC4A.dta")
+
+prod <- subset(prod,crop == "pot" & season == "sec13")
+### merge prod to fert
+ fert$fertuse <- (fert$f10=="NPK" | fert$f10=="DAP"| fert$f10 == "Urea")
+fert$fertuse[is.na(fert$fertuse)] <- FALSE
+fert <- aggregate(fert$fertuse,list(fert$hhid,fert$PID, fert$PLID), max)
+names(fert) <- c("hhid","PID","PLID","fertuse")
+prodfert <- merge(prod,fert, by=c("hhid","PID","PLID"))
+
+## merge in pext
+pext <- subset(pext, et0 == "NAADS")
+pext <- pext[!duplicated(pext$hhid),]
+pext <- pext["hhid"]
+pext$ext <- TRUE
+prodfertext <- merge(prodfert, pext, by="hhid",all.x=T)
+prodfertext$ext[is.na(prodfertext$ext)]  <- 0
+mean(prodfertext$prod, trim=.1)
+mean(prodfertext$prod[prodfertext$fert==T], trim=.1)
+mean(prodfertext$prod[prodfertext$ext==T], trim=.1)
+
+mean(prodfertext$prod[prodfertext$ext==T & prodfertext$fert==T], trim=.1)
+
+
