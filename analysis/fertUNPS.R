@@ -171,8 +171,8 @@ areaB2010$prop[areaB2010$prop>100] <- NA
 yieldA2010 <- merge(areaA2010, prodA2010, by = c("HHID","parcelID","plotID","cropID"))
 yieldB2010 <- merge(areaB2010, prodB2010, by = c("HHID","parcelID","plotID","cropID"))
 
-allA2010 <- merge(yieldA2010, agsec3A2010[c(1,3,16:21,23)])
-allB2010 <- merge(yieldB2010, agsec3B2010[c(1,3,16:21,23)])
+allA2010 <- merge(yieldA2010, agsec3A2010[c(1:3,16:21,23)])
+allB2010 <- merge(yieldB2010, agsec3B2010[c(1:3,16:21,23)])
 names(allA2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 names(allB2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 allA2010$season <- 1
@@ -204,13 +204,104 @@ sum(aggregate(all2010$ext,list(all2010$HHID), max)[2])/2145
 ## remove parcelIDs to merge with more recent waves, but in fact I should add parcelIDs to the recent waves...
 all2010$parcelID <- NULL
 
+################################################################################ prepare data for UNPS2009/10  ######################################################################
+##get fertilizer use - this is at plot level
+agsec3A2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC3A.dta")
+agsec3B2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC3B.dta")
+names(agsec3A2009)[1:3] <- c("HHID","parcelID","plotID")
+names(agsec3B2009)[1:3] <- c("HHID","parcelID","plotID")
+## from here, also parcelID is needed to uniquely identify plots
+sum(duplicated(agsec3A2009[c("HHID","parcelID","plotID")]))
+sum(duplicated(agsec3B2009[c("HHID","parcelID","plotID")]))
 
+##merge in production - this is at crop level
+### issues with labels here when converting from stata...
+agsec5A2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC5A.dta")
+agsec5A2009$a5aq4 <- NULL
+agsec5B2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC5B.dta")
+agsec5B2009$a5bq4 <- NULL
+
+names(agsec5A2009)[1:4] <- c("HHID","parcelID","plotID","cropID")
+names(agsec5B2009)[1:4] <- c("HHID","parcelID","plotID","cropID")
+
+##get quantity at productionID level
+agsec5A2009$prod <- agsec5A2009$a5aq6a*agsec5A2009$a5aq6d
+agsec5B2009$prod <- agsec5B2009$a5bq6a*agsec5B2009$a5bq6d
+##aggregate to product level
+prodA2009 <- aggregate(agsec5A2009$prod, list(agsec5A2009$HHID, agsec5A2009$parcelID,agsec5A2009$plotID, agsec5A2009$cropID), sum, na.rm=T)
+names(prodA2009) <- c("HHID","parcelID","plotID","cropID","prod")
+prodB2009 <- aggregate(agsec5B2009$prod, list(agsec5B2009$HHID, agsec5B2009$parcelID, agsec5B2009$plotID, agsec5B2009$cropID), sum, na.rm=T)
+names(prodB2009) <- c("HHID","parcelID","plotID","cropID","prod")
+prodA2009$prod[prodA2009$prod > 200000] <- NA
+prodB2009$prod[prodB2009$prod > 200000] <- NA
+
+##merge in plot area - this is at crop level
+agsec4A2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC4A.dta")
+agsec4A2009$a4aq1 <- NULL
+agsec4A2009$a4aq5 <- NULL
+agsec4B2009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC4B.dta")
+agsec4B2009$a4bq1 <- NULL
+agsec4B2009$a4bq5 <- NULL
+names(agsec4A2009)[1:4] <- c("HHID","parcelID","plotID","cropID")
+names(agsec4B2009)[1:4] <- c("HHID","parcelID","plotID","cropID")
+agsec4A2009$a4aq9[agsec4A2009$a4aq7 == "Pure Stand"] <- 100
+agsec4B2009$a4bq9[agsec4B2009$a4bq7 == "Pure stand"] <- 100
+
+areaA2009 <- aggregate(cbind(agsec4A2009$a4aq8,agsec4A2009$a4aq9), list(agsec4A2009$HHID, agsec4A2009$parcelID, agsec4A2009$plotID, agsec4A2009$cropID), sum, na.rm=T)
+names(areaA2009) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaB2009 <- aggregate(cbind(agsec4B2009$a4bq8,agsec4B2009$a4bq9), list(agsec4B2009$HHID, agsec4B2009$parcelID, agsec4B2009$plotID, agsec4B2009$cropID), sum, na.rm=T)
+names(areaB2009) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaA2009$prop[areaA2009$prop>100] <- NA
+areaB2009$prop[areaB2009$prop>100] <- NA
+
+yieldA2009 <- merge(areaA2009, prodA2009, by = c("HHID","parcelID","plotID","cropID"))
+yieldB2009 <- merge(areaB2009, prodB2009, by = c("HHID","parcelID","plotID","cropID"))
+
+allA2009 <- merge(yieldA2009, agsec3A2009[c(1:3,14:19,21)])
+allB2009 <- merge(yieldB2009, agsec3B2009[c(1:3,14:19,21)])
+names(allA2009) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+names(allB2009) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+allA2009$season <- 1
+allB2009$season <- 2
+
+all2009 <- rbind(allA2009, allB2009)
+
+all2009$yield <- all2009$prod / (all2009$area * all2009$prop/100)
+all2009$yield[all2009$yield > 15000] <- NA 
+
+##merge in extension - this is at household level
+## this time it is only those that received extension that have been recorded
+agsec92009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC10.dta")
+agsec92009$agext <- 0
+agsec92009$agext[agsec92009$a10q5a=="Yes"] <- 1
+ext2009 <- aggregate(agsec92009$agext, list(agsec92009$HHID),max, na.rm=T)
+names(ext2009) <- c("HHID","ext")
+### calculate percentage of households that reported to have received extension on ag production in the last 12 months
+sum(ext2009$ext)/length(ext2009$ext)
+
+all2009 <- merge(all2009, ext2009, by="HHID", all.x=T)
+all2009$w <- NA
+all2009$ext[is.na(all2009$ext)] <- 0
+
+
+## remove parcelIDs to merge with more recent waves, but in fact I should add parcelIDs to the recent waves...
+all2009$parcelID <- NULL
+
+################################################################################ prepare data for UNPS2005/06  ######################################################################
+
+
+
+
+
+
+
+
+all2009$year <- 2009
 all2010$year <- 2010
 all2011$year <- 2011
 all2013$year <- 2013
 
-
-all <- rbind(all2010,all2011, all2013)
+all <- rbind(all2009,all2010,all2011, all2013)
 
 
 
@@ -232,7 +323,7 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.2,1.5), xlim=c(5.1,9),lwd=3)
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.2,1.5), xlim=c(5.1,8),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
