@@ -33,6 +33,9 @@ areaA2013 <- aggregate(cbind(agsec4A2013$a4aq7,agsec4A2013$a4aq9), list(agsec4A2
 names(areaA2013) <- c("HHID","plotID","cropID","area", "prop")
 areaB2013 <- aggregate(cbind(agsec4B2013$a4bq7,agsec4B2013$a4bq9), list(agsec4B2013$HHID, agsec4B2013$plotID, agsec4B2013$cropID), sum, na.rm=T)
 names(areaB2013) <- c("HHID","plotID","cropID","area", "prop")
+areaA2013$prop[areaA2013$prop>100] <- NA
+areaB2013$prop[areaB2013$prop>100] <- NA
+
 
 yieldA2013 <- merge(areaA2013, prodA2013, by = c("HHID","plotID","cropID"))
 yieldB2013 <- merge(areaB2013, prodB2013, by = c("HHID","plotID","cropID"))
@@ -121,10 +124,93 @@ sum(ext2011$ext)/length(ext2011$ext)
 all2011 <- merge(all2011, ext2011, by="HHID")
 all2011$w <- NA
 
+
+################################################################################ prepare data for UNPS2010/11  ######################################################################
+##get fertilizer use - this is at plot level
+agsec3A2010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC3A.dta")
+agsec3B2010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC3B.dta")
+names(agsec3A2010)[1:3] <- c("HHID","parcelID","plotID")
+names(agsec3B2010)[1:3] <- c("HHID","parcelID","plotID")
+## from here, also parcelID is needed to uniquely identify plots
+sum(duplicated(agsec3A2010[c("HHID","parcelID","plotID")]))
+sum(duplicated(agsec3B2010[c("HHID","parcelID","plotID")]))
+
+##merge in production - this is at crop level
+### issues with labels here when converting from stata...
+agsec5A2010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC5A.dta")
+agsec5B2010 <-  cbind(read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC5B.dta", convert.factors=F)[1:4], read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC5B.dta")[-(1:4)])
+names(agsec5A2010)[1:3] <- c("HHID","parcelID","plotID")
+names(agsec5B2010)[1:3] <- c("HHID","parcelID","plotID")
+
+##get quantity at productionID level
+agsec5A2010$prod <- agsec5A2010$a5aq6a*agsec5A2010$a5aq6d
+agsec5B2010$prod <- agsec5B2010$a5bq6a*agsec5B2010$a5bq6d
+##aggregate to product level
+prodA2010 <- aggregate(agsec5A2010$prod, list(agsec5A2010$HHID, agsec5A2010$parcelID,agsec5A2010$plotID, agsec5A2010$cropID), sum, na.rm=T)
+names(prodA2010) <- c("HHID","parcelID","plotID","cropID","prod")
+prodB2010 <- aggregate(agsec5B2010$prod, list(agsec5B2010$HHID, agsec5B2010$parcelID, agsec5B2010$plotID, agsec5B2010$cropID), sum, na.rm=T)
+names(prodB2010) <- c("HHID","parcelID","plotID","cropID","prod")
+prodA2010$prod[prodA2010$prod > 200000] <- NA
+prodB2010$prod[prodB2010$prod > 200000] <- NA
+
+##merge in plot area - this is at crop level
+agsec4A2010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC4A.dta")
+agsec4B2010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC4B.dta")
+names(agsec4A2010)[1:3] <- c("HHID","parcelID","plotID")
+names(agsec4B2010)[1:3] <- c("HHID","parcelID","plotID")
+agsec4A2010$a4aq9[agsec4A2010$a4aq7 == "Pure Stand"] <- 100
+agsec4B2010$a4bq9[agsec4B2010$a4bq7 == "Pure stand"] <- 100
+
+areaA2010 <- aggregate(cbind(agsec4A2010$a4aq8,agsec4A2010$a4aq9), list(agsec4A2010$HHID, agsec4A2010$parcelID, agsec4A2010$plotID, agsec4A2010$cropID), sum, na.rm=T)
+names(areaA2010) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaB2010 <- aggregate(cbind(agsec4B2010$a4bq8,agsec4B2010$a4bq9), list(agsec4B2010$HHID, agsec4B2010$parcelID, agsec4B2010$plotID, agsec4B2010$cropID), sum, na.rm=T)
+names(areaB2010) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaA2010$prop[areaA2010$prop>100] <- NA
+areaB2010$prop[areaB2010$prop>100] <- NA
+
+yieldA2010 <- merge(areaA2010, prodA2010, by = c("HHID","parcelID","plotID","cropID"))
+yieldB2010 <- merge(areaB2010, prodB2010, by = c("HHID","parcelID","plotID","cropID"))
+
+allA2010 <- merge(yieldA2010, agsec3A2010[c(1,3,16:21,23)])
+allB2010 <- merge(yieldB2010, agsec3B2010[c(1,3,16:21,23)])
+names(allA2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+names(allB2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+allA2010$season <- 1
+allB2010$season <- 2
+
+all2010 <- rbind(allA2010, allB2010)
+
+all2010$yield <- all2010$prod / (all2010$area * all2010$prop/100)
+all2010$yield[all2010$yield > 15000] <- NA 
+
+##merge in extension - this is at household level
+## this time it is only those that received extension that have been recorded
+agsec92010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC9.dta")
+agsec92010$agext <- 0
+agsec92010$agext[agsec92010$a9q5a=="Yes"] <- 1
+ext2010 <- aggregate(agsec92010$agext, list(agsec92010$HHID),max, na.rm=T)
+names(ext2010) <- c("HHID","ext")
+### calculate percentage of households that reported to have received extension on ag production in the last 12 months
+sum(ext2010$ext)/length(ext2010$ext)
+
+all2010 <- merge(all2010, ext2010, by="HHID", all.x=T)
+all2010$w <- NA
+all2010$ext[is.na(all2010$ext)] <- 0
+
+sum(aggregate(all2010$ext,list(all2010$HHID), max)[2])/2145
+#20 percent of households got extension 9n 2010
+
+
+## remove parcelIDs to merge with more recent waves, but in fact I should add parcelIDs to the recent waves...
+all2010$parcelID <- NULL
+
+
+all2010$year <- 2010
 all2011$year <- 2011
 all2013$year <- 2013
 
-all <- rbind(all2011, all2013)
+
+all <- rbind(all2010,all2011, all2013)
 
 
 
@@ -146,7 +232,7 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.2,.8), xlim=c(5.2,7.3),lwd=3)
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.2,1.5), xlim=c(5.1,9),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
@@ -159,7 +245,7 @@ sink()
 df <- read.table("temp.txt")
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.3,8))
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
 lines(df[,1],df$fit, lwd=3, col="red")
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
