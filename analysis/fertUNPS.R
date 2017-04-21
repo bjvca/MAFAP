@@ -280,20 +280,32 @@ names(ext2009) <- c("HHID","ext")
 sum(ext2009$ext)/length(ext2009$ext)
 
 all2009 <- merge(all2009, ext2009, by="HHID", all.x=T)
-all2009$w <- NA
+#merge in weights
+all2009 <- merge(all2009, read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/GSEC1.dta")[c("HHID","wgt09")])
+names(all2009)[names(all2009) == "wgt09"] <- "w"
 all2009$ext[is.na(all2009$ext)] <- 0
+
+all2009$fert_use <- as.numeric(all2009$fert_use == "Yes")
+###
+
+inter <- aggregate(all2009[c("fert_use","w")],list(all2009$HHID, all2009$parcelID, all2009$plotID, all2009$season),max, na.rm=T)
+names(inter)[1:4] <- c("HHID", "parcelID","plotID", "season")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+sum(inter$fert_use[inter$season == 1]*inter$w[inter$season == 1], na.rm=T)/sum(inter$w[inter$season == 1], na.rm=T)
+sum(inter$fert_use[inter$season == 2]*inter$w[inter$season == 2], na.rm=T)/sum(inter$w[inter$season == 2], na.rm=T)
+
+inter <- aggregate(all2009[c("fert_use","w")],list(all2009$HHID),max, na.rm=T)
+names(inter)[1] <- c("HHID")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+
 
 
 ## remove parcelIDs to merge with more recent waves, but in fact I should add parcelIDs to the recent waves...
 all2009$parcelID <- NULL
-
-################################################################################ prepare data for UNPS2005/06  ######################################################################
-
-
-
-
-
-
 
 
 all2009$year <- 2009
@@ -314,41 +326,41 @@ library(locfit)
 #pdf("~/data/projects/MAFAP/analysis/yields.pdf",sep=""))
 
 
-fit <- locfit((fert_use == "Yes")~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == "Yes" & ext== 0 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.2,1.5), xlim=c(5.1,8),lwd=3)
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(0,.0125), xlim=c(5.1,8),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
-fit <- locfit(ext~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((ext == 1 & fert_use== "No")~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
 lines(df[,1],df$fit, lwd=3, col="red")
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
-fit <- locfit((fert_use == "Yes")*ext~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == "Yes" & ext == 1 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
 lines(df[,1],df$fit, lwd=3, col="green")
 #lines(df[,1],df$lower, lty=4)
