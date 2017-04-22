@@ -173,12 +173,18 @@ yieldB2010 <- merge(areaB2010, prodB2010, by = c("HHID","parcelID","plotID","cro
 
 allA2010 <- merge(yieldA2010, agsec3A2010[c(1:3,16:21,23)])
 allB2010 <- merge(yieldB2010, agsec3B2010[c(1:3,16:21,23)])
+allB2010$a3bq14[allB2010$a3bq14 == 1] <- "Yes"
+allB2010$a3bq14[allB2010$a3bq14 != "Yes"] <- "No"
+
 names(allA2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 names(allB2010) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 allA2010$season <- 1
 allB2010$season <- 2
 
 all2010 <- rbind(allA2010, allB2010)
+#merge in weights here
+all2010 <- merge(all2010, read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/GSEC1.dta")[c("HHID","wgt10")])
+names(all2010)[names(all2010) == "wgt10"] <- "w"
 
 all2010$yield <- all2010$prod / (all2010$area * all2010$prop/100)
 all2010$yield[all2010$yield > 15000] <- NA 
@@ -191,15 +197,29 @@ agsec92010$agext[agsec92010$a9q5a=="Yes"] <- 1
 ext2010 <- aggregate(agsec92010$agext, list(agsec92010$HHID),max, na.rm=T)
 names(ext2010) <- c("HHID","ext")
 ### calculate percentage of households that reported to have received extension on ag production in the last 12 months
-sum(ext2010$ext)/length(ext2010$ext)
+
 
 all2010 <- merge(all2010, ext2010, by="HHID", all.x=T)
-all2010$w <- NA
 all2010$ext[is.na(all2010$ext)] <- 0
 
-sum(aggregate(all2010$ext,list(all2010$HHID), max)[2])/2145
-#20 percent of households got extension 9n 2010
+###
 
+inter <-  aggregate(all2010[c("ext","w")], list(all2010$HHID),max )
+all2010$fert_use[is.na(all2010$fert_use)] <- "No"
+all2010$fert_use <- (all2010$fert_use == "Yes")
+inter <- aggregate(all2010[c("fert_use","w")],list(all2010$HHID, all2010$parcelID, all2010$plotID, all2010$season),max, na.rm=T)
+names(inter)[1:4] <- c("HHID", "parcelID","plotID", "season")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+sum(inter$fert_use[inter$season == 1]*inter$w[inter$season == 1], na.rm=T)/sum(inter$w[inter$season == 1], na.rm=T)
+sum(inter$fert_use[inter$season == 2]*inter$w[inter$season == 2], na.rm=T)/sum(inter$w[inter$season == 2], na.rm=T)
+
+inter <- aggregate(all2010[c("fert_use","w")],list(all2010$HHID),max, na.rm=T)
+names(inter)[1] <- c("HHID")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
 
 ## remove parcelIDs to merge with more recent waves, but in fact I should add parcelIDs to the recent waves...
 all2010$parcelID <- NULL
