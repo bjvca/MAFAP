@@ -64,6 +64,21 @@ sum(ext2013$ext*ext2013$w)/sum(ext2013$w)
 
 all2013 <- merge(all2013, ext2013, by="HHID")
 
+inter <- aggregate(cbind(all2013$fert_use == "Yes",all2013$w), list(all2013$HHID, all2013$plotID, all2013$season),max, na.rm=T)
+
+names(inter) <- c("HHID","plotID", "season", "fert_use", "w")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+sum(inter$fert_use[inter$season == 1]*inter$w[inter$season == 1], na.rm=T)/sum(inter$w[inter$season == 1], na.rm=T)
+sum(inter$fert_use[inter$season == 2]*inter$w[inter$season == 2], na.rm=T)/sum(inter$w[inter$season == 2], na.rm=T)
+inter <- aggregate(cbind(all2013$fert_use == "Yes",all2013$w), list(all2013$HHID),max, na.rm=T)
+
+names(inter) <- c("HHID", "fert_use", "w")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+
 ################################################################################ prepare data for UNPS2011/12  ######################################################################
 ##get fertilizer use - this is at plot level
 agsec3A2011 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGSEC3A.dta")
@@ -118,11 +133,33 @@ agsec92011$agext <- 0
 agsec92011$agext[agsec92011$a9q5a=="Yes"] <- 1
 ext2011 <- aggregate(agsec92011$agext, list(agsec92011$HHID),max, na.rm=T)
 names(ext2011) <- c("HHID","ext")
-### calculate percentage of households that reported to have received extension on ag production in the last 12 months
-sum(ext2011$ext)/length(ext2011$ext)
+
 
 all2011 <- merge(all2011, ext2011, by="HHID")
-all2011$w <- NA
+all2011 <- merge(all2011, read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/GSEC1.dta")[c("HHID","mult")])
+names(all2011)[names(all2011) == "mult"] <- "w"
+inter <- aggregate(cbind(all2011$ext,all2011$w), list(all2011$HHID),max)
+names(inter) <- c("HHID","ext","w")
+sum(inter$ext*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+
+sum((all2011$fert_use == "Yes") * all2011$w, na.rm=T)/sum(all2011$w, na.rm=T)
+
+
+inter <- aggregate(cbind(all2011$fert_use == "Yes",all2011$w), list(all2011$HHID, all2011$plotID, all2011$season),max, na.rm=T)
+
+names(inter) <- c("HHID","plotID", "season", "fert_use", "w")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+sum(inter$fert_use[inter$season == 1]*inter$w[inter$season == 1], na.rm=T)/sum(inter$w[inter$season == 1], na.rm=T)
+sum(inter$fert_use[inter$season == 2]*inter$w[inter$season == 2], na.rm=T)/sum(inter$w[inter$season == 2], na.rm=T)
+
+inter <- aggregate(cbind(all2011$fert_use == "Yes",all2011$w), list(all2011$HHID),max, na.rm=T)
+names(inter) <- c("HHID","fert_use","w")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+
 
 
 ################################################################################ prepare data for UNPS2010/11  ######################################################################
@@ -333,6 +370,10 @@ all2010$year <- 2010
 all2011$year <- 2011
 all2013$year <- 2013
 
+all2009$fert_use <-  all2009$fert_use == 1
+all2011$fert_use <-  all2011$fert_use == "Yes"
+all2013$fert_use <-  all2013$fert_use == "Yes"
+
 all <- rbind(all2009,all2010,all2011, all2013)
 
 
@@ -346,41 +387,41 @@ library(locfit)
 #pdf("~/data/projects/MAFAP/analysis/yields.pdf",sep=""))
 
 
-fit <- locfit((fert_use == "Yes" & ext== 0 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == 1 & ext== 0 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(0,.0125), xlim=c(5.1,8),lwd=3)
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.1,1.2), xlim=c(5.1,8),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
-fit <- locfit((ext == 1 & fert_use== "No")~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((ext == 1 & fert_use== 0)~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
 lines(df[,1],df$fit, lwd=3, col="red")
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
-fit <- locfit((fert_use == "Yes" & ext == 1 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == 1 & ext == 1 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
-#df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
 lines(df[,1],df$fit, lwd=3, col="green")
 #lines(df[,1],df$lower, lty=4)
@@ -391,7 +432,19 @@ rug(log(all$yield[  all$yield>0 & !is.na(all$yield)]))
 quantile(log(all$yield[  all$yield>0 & !is.na(all$yield)]),c(.2,.9))
 
 
+inter <- aggregate(all[c("fert_use","w")],list(all$HHID, all2009$, all2009$plotID, all2009$season),max, na.rm=T)
+names(inter)[1:4] <- c("HHID", "parcelID","plotID", "season")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
+sum(inter$fert_use[inter$season == 1]*inter$w[inter$season == 1], na.rm=T)/sum(inter$w[inter$season == 1], na.rm=T)
+sum(inter$fert_use[inter$season == 2]*inter$w[inter$season == 2], na.rm=T)/sum(inter$w[inter$season == 2], na.rm=T)
 
+inter <- aggregate(all2009[c("fert_use","w")],list(all2009$HHID),max, na.rm=T)
+names(inter)[1] <- c("HHID")
+inter$w[is.infinite(inter$w)] <- NA
+inter$fert_use[is.infinite(inter$fert_use)] <- NA
+sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
 
 
 
