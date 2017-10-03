@@ -15,10 +15,10 @@ agsec5A2013$prod <- agsec5A2013$a5aq6a*agsec5A2013$a5aq6d
 agsec5B2013$prod <- agsec5B2013$a5bq6a*agsec5B2013$a5bq6d
 ##aggregate to product level
 
-prodA2013 <- aggregate(agsec5A2013$prod, list(agsec5A2013$HHID, agsec5A2013$plotID, agsec5A2013$cropID), sum, na.rm=T)
-names(prodA2013) <- c("HHID","plotID","cropID","prod")
-prodB2013 <- aggregate(agsec5B2013$prod, list(agsec5B2013$HHID, agsec5B2013$plotID, agsec5B2013$cropID), sum, na.rm=T)
-names(prodB2013) <- c("HHID","plotID","cropID","prod")
+prodA2013 <- aggregate(agsec5A2013$prod, list(agsec5A2013$HHID, agsec5A2013$parcelID, agsec5A2013$plotID, agsec5A2013$cropID), sum, na.rm=T)
+names(prodA2013) <- c("HHID","parcelID","plotID","cropID","prod")
+prodB2013 <- aggregate(agsec5B2013$prod, list(agsec5B2013$HHID, agsec5B2013$parcelID, agsec5B2013$plotID, agsec5B2013$cropID), sum, na.rm=T)
+names(prodB2013) <- c("HHID","parcelID","plotID","cropID","prod")
 prodA2013$prod[prodA2013$prod > 200000] <- NA
 prodB2013$prod[prodB2013$prod > 200000] <- NA
 
@@ -29,21 +29,27 @@ agsec4A2013$a4aq9[agsec4A2013$a4aq8 == "Pure Stand"] <- 100
 agsec4B2013$a4bq9[agsec4B2013$a4bq8 == "Pure Stand"] <- 100
 
 ##how to handle mixed cropping
-areaA2013 <- aggregate(cbind(agsec4A2013$a4aq7,agsec4A2013$a4aq9), list(agsec4A2013$HHID, agsec4A2013$plotID, agsec4A2013$cropID), sum, na.rm=T)
-names(areaA2013) <- c("HHID","plotID","cropID","area", "prop")
-areaB2013 <- aggregate(cbind(agsec4B2013$a4bq7,agsec4B2013$a4bq9), list(agsec4B2013$HHID, agsec4B2013$plotID, agsec4B2013$cropID), sum, na.rm=T)
-names(areaB2013) <- c("HHID","plotID","cropID","area", "prop")
+areaA2013 <- aggregate(cbind(agsec4A2013$a4aq7,agsec4A2013$a4aq9), list(agsec4A2013$HHID, agsec4A2013$parcelID, agsec4A2013$plotID, agsec4A2013$cropID), sum, na.rm=T)
+names(areaA2013) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaB2013 <- aggregate(cbind(agsec4B2013$a4bq7,agsec4B2013$a4bq9), list(agsec4B2013$HHID, agsec4B2013$parcelID, agsec4B2013$plotID, agsec4B2013$cropID), sum, na.rm=T)
+names(areaB2013) <- c("HHID","parcelID","plotID","cropID","area", "prop")
 areaA2013$prop[areaA2013$prop>100] <- NA
 areaB2013$prop[areaB2013$prop>100] <- NA
 
 
-yieldA2013 <- merge(areaA2013, prodA2013, by = c("HHID","plotID","cropID"))
-yieldB2013 <- merge(areaB2013, prodB2013, by = c("HHID","plotID","cropID"))
 
-allA2013 <- merge(yieldA2013, agsec3A2013[c(1,3,17:23)])
-allB2013 <- merge(yieldB2013, agsec3B2013[c(1,2,17:23)])
-names(allA2013) <- c("HHID", "plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
-names(allB2013) <- c("HHID", "plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+yieldA2013 <- merge(areaA2013, prodA2013, by = c("HHID","parcelID","plotID","cropID"))
+yieldB2013 <- merge(areaB2013, prodB2013, by = c("HHID","parcelID","plotID","cropID"))
+
+allA2013 <- merge(yieldA2013, agsec3A2013[c(1,2,3,17:23)])
+allB2013 <- merge(yieldB2013, agsec3B2013[c(1,3,2,17:23)])
+
+
+
+##
+
+names(allA2013) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+names(allB2013) <- c("HHID","parcelID", "plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 allA2013$season <- 1
 allB2013$season <- 2
 
@@ -51,6 +57,15 @@ all2013 <- rbind(allA2013, allB2013)
 
 all2013$yield <- all2013$prod / (all2013$area * all2013$prop/100)
 all2013$yield[all2013$yield > 15000] <- NA 
+
+### merge in instruments, this is at parcel level
+agsec2a <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/AGSEC2A.dta")[c( "HHID", "parcelID", "a2aq1owned" , "a2aq6", "a2aq19" )]
+names(agsec2a) <- c("HHID","parcelID","own","dist","topo")
+agsec2b <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/AGSEC2B.dta")[c( "HHID", "parcelID", "a2bq1owned" , "a2bq6", "a2bq17" )]
+names(agsec2b) <- c("HHID","parcelID","own","dist","topo")
+agsec2 <- rbind(agsec2a,agsec2b)
+
+all2013 <- merge(all2013,agsec2, by=c("HHID","parcelID"))
 
 ##merge in extension - this is at household level
 
@@ -63,6 +78,7 @@ names(ext2013) <- c("HHID","ext","w")
 sum(ext2013$ext*ext2013$w)/sum(ext2013$w)
 
 all2013 <- merge(all2013, ext2013, by="HHID")
+
 
 inter <- aggregate(cbind(all2013$fert_use == "Yes",all2013$w), list(all2013$HHID, all2013$plotID, all2013$season),max, na.rm=T)
 
@@ -79,6 +95,56 @@ inter$w[is.infinite(inter$w)] <- NA
 inter$fert_use[is.infinite(inter$fert_use)] <- NA
 sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
 
+## merge in HHsize, this is at HHlevel
+gsec2 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC2.dta")[c("HHID","h2q7")]
+gsec2$ones <- 1
+hhsize <- aggregate(gsec2$ones, list(gsec2$HHID), sum)
+
+names(hhsize) <- c("HHID","hhsize")
+hhsize$HHID <- gsub("-","",substring(hhsize$HHID,2))
+hhsize$HHID <-  as.numeric(as.character(hhsize$HHID))
+
+all2013 <- merge(all2013, hhsize, by="HHID")
+
+### merge in femhead, eduhead
+gsec2 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC2.dta")[c("HHID","h2q3","h2q4","h2q8")]
+heads <- subset(gsec2,h2q4 == "Head")
+heads$h2q4 <- NULL
+names(heads) <- c("HHID","femhead","agehead")
+heads$femhead <- heads$femhead == "Female"
+heads$HHID <- gsub("-","",substring(heads$HHID,2))
+heads$HHID <-  as.numeric(as.character(heads$HHID))
+
+all2013 <- merge(all2013, heads, by="HHID")
+
+### merge in headedu
+## identify heads
+gsec2 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC2.dta")[c("HHID","PID","h2q4")]
+heads <- subset(gsec2,h2q4 == "Head")
+
+gsec4 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC4.dta")
+
+edu <- merge(heads, gsec4, by = c("HHID","PID"))[c("HHID","h4q4")]
+names(edu) <- c("HHID","literate")
+edu$literate <-  edu$literate == "Able to read and write"
+edu$HHID <- gsub("-","",substring(edu$HHID,2))
+edu$HHID <-  as.numeric(as.character(edu$HHID))
+
+all2013 <- merge(all2013, edu, by="HHID")
+
+### merge in potential instrument at housheold level
+sec16 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC16.dta")
+inputcost <- subset(sec16, h16q00 == "Unusually High Costs of Agricultural Inputs")[c("HHID","h16q01")]
+inputcost$h16q01 <- inputcost$h16q01 == "Yes"
+names(inputcost) <- c("HHID","inputshock")
+inputcost$HHID <- gsub("-","",substring(inputcost$HHID,2))
+inputcost$HHID <-  as.numeric(as.character(inputcost$HHID))
+all2013 <- merge(all2013, inputcost, by="HHID")
+
+
+summary(lm(log(yield)~(fert_use=="Yes")*ext + hhsize + femhead + agehead + literate + dist + inputshock + topo + own ,data=all2013[all2013$yield>0 & all2013$cropID == 210,]))
+
+
 ################################################################################ prepare data for UNPS2011/12  ######################################################################
 ##get fertilizer use - this is at plot level
 agsec3A2011 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGSEC3A.dta")
@@ -91,10 +157,10 @@ agsec5B2011 <- cbind(read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGS
 agsec5A2011$prod <- agsec5A2011$a5aq6a*agsec5A2011$a5aq6d
 agsec5B2011$prod <- agsec5B2011$a5bq6a*agsec5B2011$a5bq6d
 ##aggregate to product level
-prodA2011 <- aggregate(agsec5A2011$prod, list(agsec5A2011$HHID, agsec5A2011$plotID, agsec5A2011$cropID), sum, na.rm=T)
-names(prodA2011) <- c("HHID","plotID","cropID","prod")
-prodB2011 <- aggregate(agsec5B2011$prod, list(agsec5B2011$HHID, agsec5B2011$plotID, agsec5B2011$cropID), sum, na.rm=T)
-names(prodB2011) <- c("HHID","plotID","cropID","prod")
+prodA2011 <- aggregate(agsec5A2011$prod, list(agsec5A2011$HHID, agsec5A2011$parcelID, agsec5A2011$plotID, agsec5A2011$cropID), sum, na.rm=T)
+names(prodA2011) <- c("HHID","parcelID","plotID","cropID","prod")
+prodB2011 <- aggregate(agsec5B2011$prod, list(agsec5B2011$HHID, agsec5B2011$parcelID, agsec5B2011$plotID, agsec5B2011$cropID), sum, na.rm=T)
+names(prodB2011) <- c("HHID","parcelID","plotID","cropID","prod")
 prodA2011$prod[prodA2011$prod > 200000] <- NA
 prodB2011$prod[prodB2011$prod > 200000] <- NA
 
@@ -104,20 +170,20 @@ agsec4B2011 <- cbind(read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGS
 agsec4A2011$a4aq9[agsec4A2011$a4aq8 == "Pure Stand"] <- 100
 agsec4B2011$a4bq9[agsec4B2011$a4bq8 == "Pure Stand"] <- 100
 
-areaA2011 <- aggregate(cbind(agsec4A2011$a4aq7,agsec4A2011$a4aq9), list(agsec4A2011$HHID, agsec4A2011$plotID, agsec4A2011$cropID), sum, na.rm=T)
-names(areaA2011) <- c("HHID","plotID","cropID","area", "prop")
-areaB2011 <- aggregate(cbind(agsec4B2011$a4bq7,agsec4B2011$a4bq9), list(agsec4B2011$HHID, agsec4B2011$plotID, agsec4B2011$cropID), sum, na.rm=T)
-names(areaB2011) <- c("HHID","plotID","cropID","area", "prop")
+areaA2011 <- aggregate(cbind(agsec4A2011$a4aq7,agsec4A2011$a4aq9), list(agsec4A2011$HHID,agsec4A2011$parcelID, agsec4A2011$plotID, agsec4A2011$cropID), sum, na.rm=T)
+names(areaA2011) <- c("HHID","parcelID","plotID","cropID","area", "prop")
+areaB2011 <- aggregate(cbind(agsec4B2011$a4bq7,agsec4B2011$a4bq9), list(agsec4B2011$HHID, agsec4B2011$parcelID, agsec4B2011$plotID, agsec4B2011$cropID), sum, na.rm=T)
+names(areaB2011) <- c("HHID","parcelID","plotID","cropID","area", "prop")
 areaA2011$prop[areaA2011$prop>100] <- NA
 areaB2011$prop[areaB2011$prop>100] <- NA
 
-yieldA2011 <- merge(areaA2011, prodA2011, by = c("HHID","plotID","cropID"))
-yieldB2011 <- merge(areaB2011, prodB2011, by = c("HHID","plotID","cropID"))
+yieldA2011 <- merge(areaA2011, prodA2011, by = c("HHID","parcelID","plotID","cropID"))
+yieldB2011 <- merge(areaB2011, prodB2011, by = c("HHID","parcelID","plotID","cropID"))
 
 allA2011 <- merge(yieldA2011, agsec3A2011[c(1,3,17:23)])
 allB2011 <- merge(yieldB2011, agsec3B2011[c(1,3,17:23)])
-names(allA2011) <- c("HHID", "plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
-names(allB2011) <- c("HHID", "plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+names(allA2011) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
+names(allB2011) <- c("HHID", "parcelID","plotID", "cropID", "area", "prop", "prod", "fert_use", "fert_typ", "fert_qty", "fert_bgt", "fert_qty_bgt", "fert_paid", "fert_where_bgt")
 allA2011$season <- 1
 allB2011$season <- 2
 
@@ -125,6 +191,19 @@ all2011 <- rbind(allA2011, allB2011)
 
 all2011$yield <- all2011$prod / (all2011$area * all2011$prop/100)
 all2011$yield[all2011$yield > 15000] <- NA 
+
+### merge in instruments, this is at parcel level
+agsec2a <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGSEC2A.dta")[c( "HHID", "parcelID", "a2aq6", "a2aq19" )]
+names(agsec2a) <- c("HHID","parcelID","dist","topo")
+agsec2a$own <- "Owned"
+agsec2a <- agsec2a[c("HHID","parcelID","own","dist","topo")]
+agsec2b <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/AGSEC2B.dta")[c( "HHID", "parcelID", "a2bq6", "a2bq17" )]
+names(agsec2b) <- c("HHID","parcelID","dist","topo")
+agsec2b$own <- "Access / Use Rights"
+agsec2b <- agsec2b[c("HHID","parcelID","own","dist","topo")]
+agsec2 <- rbind(agsec2a,agsec2b)
+
+all2011 <- merge(all2011,agsec2, by=c("HHID","parcelID"), all.x=T)
 
 ##merge in extension - this is at household level
 
@@ -226,6 +305,21 @@ names(all2010)[names(all2010) == "wgt10"] <- "w"
 all2010$yield <- all2010$prod / (all2010$area * all2010$prop/100)
 all2010$yield[all2010$yield > 15000] <- NA 
 
+### merge in instruments, this is at parcel level
+agsec2a <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC2A.dta")[c( "HHID", "prcid", "a2aq6", "a2aq21" )]
+names(agsec2a) <- c("HHID","parcelID","dist","topo")
+agsec2a$own <- "Owned"
+agsec2a <- agsec2a[c("HHID","parcelID","own","dist","topo")]
+agsec2a$parcelID <- as.numeric(as.character(agsec2a$parcelID))
+agsec2b <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC2B.dta")[c( "HHID", "prcid", "a2bq6", "a2bq20" )]
+names(agsec2b) <- c("HHID","parcelID","dist","topo")
+agsec2b$own <- "Access / Use Rights"
+agsec2b <- agsec2b[c("HHID","parcelID","own","dist","topo")]
+agsec2b$parcelID <- as.numeric(as.character(agsec2b$parcelID))
+agsec2 <- rbind(agsec2a,agsec2b)
+
+all2010 <- merge(all2010,agsec2, by=c("HHID","parcelID"))
+
 ##merge in extension - this is at household level
 ## this time it is only those that received extension that have been recorded
 agsec92010 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/AGSEC9.dta")
@@ -326,6 +420,22 @@ all2009 <- rbind(allA2009, allB2009)
 all2009$yield <- all2009$prod / (all2009$area * all2009$prop/100)
 all2009$yield[all2009$yield > 15000] <- NA 
 
+### merge in instruments, this is at parcel level
+agsec2a <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC2A.dta")[c( "HHID", "a2aq2", "a2aq6", "a2aq21" )]
+names(agsec2a) <- c("HHID","parcelID","dist","topo")
+agsec2a$own <- "Owned"
+agsec2a <- agsec2a[c("HHID","parcelID","own","dist","topo")]
+agsec2a$parcelID <- as.numeric(as.character(agsec2a$parcelID))
+agsec2b <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC2B.dta")[c( "HHID", "a2bq2", "a2bq6", "a2bq20" )]
+names(agsec2b) <- c("HHID","parcelID","dist","topo")
+agsec2b$own <- "Access / Use Rights"
+agsec2b <- agsec2b[c("HHID","parcelID","own","dist","topo")]
+agsec2b$parcelID <- as.numeric(as.character(agsec2b$parcelID))
+agsec2 <- rbind(agsec2a,agsec2b)
+
+all2009 <- merge(all2009,agsec2, by=c("HHID","parcelID"))
+
+
 ##merge in extension - this is at household level
 ## this time it is only those that received extension that have been recorded
 agsec92009 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/AGSEC10.dta")
@@ -375,62 +485,212 @@ all2011$fert_use <-  all2011$fert_use == "Yes"
 all2013$fert_use <-  all2013$fert_use == "Yes"
 
 all <- rbind(all2009,all2010,all2011, all2013)
+write.dta(all,file="/home/bjvca/data/projects/MAFAP/data/allfert.dta")
+
+## what are most fertilizered crops
+tapply(all$fert_use, all$cropID, mean, na.rm=T)
+table(all$cropID)
+
+## only for maize:
+maize <- subset(all, cropID == 130  )
+write.dta(maize,file="/home/bjvca/data/projects/MAFAP/data/maizefert.dta")
+## only for beans:
+beans <- subset(all, cropID == 210  )
+write.dta(beans,file="/home/bjvca/data/projects/MAFAP/data/beansfert.dta")
+## only for vegetables:
+veg <- subset(all, cropID %in% c(  410,   420,   430,   440,   450,   460,   470 )  )
+write.dta(veg,file="/home/bjvca/data/projects/MAFAP/data/vegfert.dta")
+
+####
+table(all$fert_use == 0 & all$ext== 0)/sum(table(all$fert_use == 0 & all$ext== 0))
+table(all$fert_use == 1 & all$ext== 0)/sum(table(all$fert_use == 1 & all$ext== 0))
+table(all$fert_use == 0 & all$ext== 1)/sum(table(all$fert_use == 0 & all$ext== 1))
+table(all$fert_use == 1 & all$ext== 1)/sum(table(all$fert_use == 1 & all$ext== 1))
 
 
 
+#### only for maize 
+
+####
+table(maize$fert_use == 0 & maize$ext== 0)/sum(table(maize$fert_use == 0 & maize$ext== 0))
+table(maize$fert_use == 1 & maize$ext== 0)/sum(table(maize$fert_use == 1 & maize$ext== 0))
+table(maize$fert_use == 0 & maize$ext== 1)/sum(table(maize$fert_use == 0 & maize$ext== 1))
+table(maize$fert_use == 1 & maize$ext== 1)/sum(table(maize$fert_use == 1 & maize$ext== 1))
 
 
-#################
-
-library(locfit)
-
-#pdf("~/data/projects/MAFAP/analysis/yields.pdf",sep=""))
+pdf("~/data/projects/MAFAP/analysis/maize.pdf")
 
 
-fit <- locfit((fert_use == 1 & ext== 0 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == 1 & ext== 0 )~log(yield),data=maize[  maize$yield>0 & !is.na(maize$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[2]  & df$log.yield.>quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[1],]
+
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
-plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.1,1.2), xlim=c(5.1,8),lwd=3)
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.5,.5), xlim=quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8)),lwd=3)
 #lines(df[,1],df$upper, lty=4)
 #lines(df[,1],df$lower, lty=4)
 
-fit <- locfit((ext == 1 & fert_use== 0)~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((ext == 1 & fert_use== 0)~log(yield),data=maize[  maize$yield>0 & !is.na(maize$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[2]  & df$log.yield.>quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[1],]
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
-lines(df[,1],df$fit, lwd=3, col="red")
+lines(df[,1],df$fit, lwd=3, col="black",lty=2)
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
-fit <- locfit((fert_use == 1 & ext == 1 )~log(yield),data=all[  all$yield>0 & !is.na(all$yield),])
+fit <- locfit((fert_use == 1 & ext == 1 )~log(yield),data=maize[  maize$yield>0 & !is.na(maize$yield),])
 fit0 <- scb(fit, ev = lfgrid(100))
 ### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
 sink(file="temp.txt")
 print(fit0)
 sink()
 df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[2]  & df$log.yield.>quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))[1],]
 df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
 #plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
-lines(df[,1],df$fit, lwd=3, col="green")
+lines(df[,1],df$fit, lwd=3, col="black", lty=3)
+abline(h=0, lwd=3, lty=1)
+legend("topleft",legend=c("fertilizer","extension","extension + fertilizer"), lty=c(1,2,3), bty="n",lwd=3, col = c("black","black","black"))
+dev.off()
+####
+
+quantile(log(maize$yield[  maize$yield>0 & !is.na(maize$yield)]),c(.2,.8))
+### for beans
+table(beans$fert_use == 0 & beans$ext== 0)/sum(table(beans$fert_use == 0 & beans$ext== 0))
+table(beans$fert_use == 1 & beans$ext== 0)/sum(table(beans$fert_use == 1 & beans$ext== 0))
+table(beans$fert_use == 0 & beans$ext== 1)/sum(table(beans$fert_use == 0 & beans$ext== 1))
+table(beans$fert_use == 1 & beans$ext== 1)/sum(table(beans$fert_use == 1 & beans$ext== 1))
+
+
+pdf("~/data/projects/MAFAP/analysis/beans.pdf")
+
+
+fit <- locfit((fert_use == 1 & ext== 0 )~log(yield),data=beans[  beans$yield>0 & !is.na(beans$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[1]
+,]
+
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.5,.5), xlim=quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8)),lwd=3)
+#lines(df[,1],df$upper, lty=4)
+#lines(df[,1],df$lower, lty=4)
+
+fit <- locfit((ext == 1 & fert_use== 0)~log(yield),data=beans[  beans$yield>0 & !is.na(beans$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[1],]
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
+lines(df[,1],df$fit, lwd=3, col="black",lty=2)
 #lines(df[,1],df$lower, lty=4)
 #text(-0.5, 0.1, "commercialized")
 
-rug(log(all$yield[  all$yield>0 & !is.na(all$yield)]))
+fit <- locfit((fert_use == 1 & ext == 1 )~log(yield),data=beans[  beans$yield>0 & !is.na(beans$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(beans$yield[  beans$yield>0 & !is.na(beans$yield)]),c(.2,.8))[1],]
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
+lines(df[,1],df$fit, lwd=3, col="black", lty=3)
+abline(h=0, lwd=3, lty=1)
+legend("topleft",legend=c("fertilizer","extension","extension + fertilizer"), lty=c(1,2,3), bty="n",lwd=3, col = c("black","black","black"))
+dev.off()
 
-quantile(log(all$yield[  all$yield>0 & !is.na(all$yield)]),c(.2,.9))
+#### for vegs
 
+table(veg$fert_use == 0 & veg$ext== 0)/sum(table(veg$fert_use == 0 & veg$ext== 0))
+table(veg$fert_use == 1 & veg$ext== 0)/sum(table(veg$fert_use == 1 & veg$ext== 0))
+table(veg$fert_use == 0 & veg$ext== 1)/sum(table(veg$fert_use == 0 & veg$ext== 1))
+table(veg$fert_use == 1 & veg$ext== 1)/sum(table(veg$fert_use == 1 & veg$ext== 1))
+
+
+pdf("~/data/projects/MAFAP/analysis/veg.pdf")
+
+
+fit <- locfit((fert_use == 1 & ext== 0 )~log(yield),data=veg[  veg$yield>0 & !is.na(veg$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[1]
+,]
+
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+
+plot(df[,1],df$fit, type="l",  xlab="log(yield)", ylab="% change in proportion",ylim = c(-.5,.5), xlim=quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8)),lwd=3)
+#lines(df[,1],df$upper, lty=4)
+#lines(df[,1],df$lower, lty=4)
+
+fit <- locfit((ext == 1 & fert_use== 0)~log(yield),data=veg[  veg$yield>0 & !is.na(veg$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[1],]
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.1,9))
+lines(df[,1],df$fit, lwd=3, col="black",lty=2)
+#lines(df[,1],df$lower, lty=4)
+#text(-0.5, 0.1, "commercialized")
+
+fit <- locfit((fert_use == 1 & ext == 1 )~log(yield),data=veg[  veg$yield>0 & !is.na(veg$yield),])
+fit0 <- scb(fit, ev = lfgrid(100))
+### this is an extremely inelegant solution - I can not extract the confidence bands from the scb object, I can only get them when I print the object to the screen.  So I decided to print the to disk and then load then again
+sink(file="temp.txt")
+print(fit0)
+sink()
+df <- read.table("temp.txt")
+df <- df[ df$log.yield. < quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[2]
+  & df$log.yield.>quantile(log(veg$yield[  veg$yield>0 & !is.na(veg$yield)]),c(.2,.8))[1],]
+df$fit <- (df$fit - mean(df$fit))/mean(df$fit)
+#plot(df[,1],df$fit, type="l",  xlab="log(total land)", ylab="probability", xlim=c(5.5,7.5))
+lines(df[,1],df$fit, lwd=3, col="black", lty=3)
+abline(h=0, lwd=3, lty=1)
+legend("topleft",legend=c("fertilizer","extension","extension + fertilizer"), lty=c(1,2,3), bty="n",lwd=3, col = c("black","black","black"))
+dev.off()
+
+
+all <- subset(all, cropID == 130 | cropID == 120 )
+### pooled regressions - to export 
+summary(lm(log(yield)~fert_use*ext+as.factor(season)+as.factor(year),data=all[all$yield>0,], weights = w))
 
 inter <- aggregate(all[c("fert_use","w")],list(all$HHID, all2009$, all2009$plotID, all2009$season),max, na.rm=T)
 names(inter)[1:4] <- c("HHID", "parcelID","plotID", "season")
@@ -446,7 +706,22 @@ inter$w[is.infinite(inter$w)] <- NA
 inter$fert_use[is.infinite(inter$fert_use)] <- NA
 sum(inter$fert_use*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
 
-
-
+### hh fixed effects
+### merge in hh level averages
+test <- aggregate(all$yield, list(all$HHID), mean, na.rm=TRUE)
+names(test) <- c("HHID","av_yld")
+all <- merge(all, test, by="HHID")
+test <- aggregate(all$fert_use, list(all$HHID), mean, na.rm=TRUE)
+names(test) <- c("HHID","av_fert")
+all <- merge(all, test, by="HHID")
+test <- aggregate(all$ext, list(all$HHID), mean, na.rm=TRUE)
+names(test) <- c("HHID","av_ext")
+all <- merge(all, test, by="HHID")
+all$yld_dev <- all$yield - all$av_yld
+all$fert_dev <- all$fert_use - all$av_fert
+all$ext_dev <- all$ext - all$av_ext
+summary(lm(yld_dev~fert_dev,data=all))
+summary(lm(yld_dev~ext_dev,data=all))
+summary(lm(yld_dev~fert_dev*ext_dev,data=all))
 
 
