@@ -1,5 +1,5 @@
 library(foreign)
-
+rm(list=ls())
 ################################################################################ prepare data for UNPS2013/14  ######################################################################
 ##get fertilizer use - this is at plot level
 agsec3A2013 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/AGSEC3A.dta")
@@ -141,8 +141,22 @@ inputcost$HHID <- gsub("-","",substring(inputcost$HHID,2))
 inputcost$HHID <-  as.numeric(as.character(inputcost$HHID))
 all2013 <- merge(all2013, inputcost, by="HHID")
 
+## merge in assets at household level
+sec14 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2013/GSEC14A.dta")
+sec14$HHID <- gsub("-","",substring(sec14$HHID,2))
+sec14$HHID <-  as.numeric(as.character(sec14$HHID))
+bike <- subset(sec14, h14q2 == "Bicycle")[c( "HHID",  "h14q3")]
+names(bike) <- c("HHID", "bike")
+bike$bike <-  bike$bike == "Yes"
+mobile <- subset(sec14, h14q2 == "Mobile phone")[c( "HHID",  "h14q3")]
+names(mobile) <- c("HHID", "mobile")
+mobile$mobile <-  mobile$mobile == "Yes"
+all2013 <- merge(all2013, bike, by="HHID")
+all2013 <- merge(all2013, mobile, by="HHID")
 
-summary(lm(log(yield)~(fert_use=="Yes")*ext + hhsize + femhead + agehead + literate + dist + inputshock + topo + own ,data=all2013[all2013$yield>0 & all2013$cropID == 210,]))
+
+
+summary(lm(log(yield)~(fert_use=="Yes")*ext + hhsize + femhead + agehead + literate + dist + inputshock + topo + own + bike + mobile ,data=all2013[all2013$yield>0 & all2013$cropID == 210,]))
 
 
 ################################################################################ prepare data for UNPS2011/12  ######################################################################
@@ -217,6 +231,19 @@ names(ext2011) <- c("HHID","ext")
 all2011 <- merge(all2011, ext2011, by="HHID")
 all2011 <- merge(all2011, read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/GSEC1.dta")[c("HHID","mult")])
 names(all2011)[names(all2011) == "mult"] <- "w"
+
+## merge in assets at household level
+sec14 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2011/GSEC14.dta")
+bike <- subset(sec14, h14q2 == "Bicycle")[c( "HHID",  "h14q3")]
+names(bike) <- c("HHID", "bike")
+bike$bike <-  bike$bike == "Yes"
+mobile <- subset(sec14, h14q2 == "Mobile phone")[c( "HHID",  "h14q3")]
+names(mobile) <- c("HHID", "mobile")
+mobile$mobile <-  mobile$mobile == "Yes"
+all2011 <- merge(all2011, bike, by="HHID")
+all2011 <- merge(all2011, mobile, by="HHID")
+
+
 inter <- aggregate(cbind(all2011$ext,all2011$w), list(all2011$HHID),max)
 names(inter) <- c("HHID","ext","w")
 sum(inter$ext*inter$w, na.rm=T)/sum(inter$w, na.rm=T)
@@ -332,6 +359,17 @@ names(ext2010) <- c("HHID","ext")
 
 all2010 <- merge(all2010, ext2010, by="HHID", all.x=T)
 all2010$ext[is.na(all2010$ext)] <- 0
+
+## merge in assets at household level
+sec14 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2010/GSEC14.dta")
+bike <- subset(sec14, h14q2 == "Bicycle")[c( "HHID",  "h14q3")]
+names(bike) <- c("HHID", "bike")
+bike$bike <- bike$bike == 1
+mobile <- subset(sec14, h14q2 == "Mobile phone")[c( "HHID",  "h14q3")]
+names(mobile) <- c("HHID", "mobile")
+mobile$mobile <- mobile$mobile == 1
+all2010 <- merge(all2010, bike, by="HHID")
+all2010 <- merge(all2010, mobile, by="HHID")
 
 ###
 
@@ -453,6 +491,19 @@ names(all2009)[names(all2009) == "wgt09"] <- "w"
 all2009$ext[is.na(all2009$ext)] <- 0
 
 all2009$fert_use <- as.numeric(all2009$fert_use == "Yes")
+
+## merge in assets at household level
+sec14 <- read.dta("/home/bjvca/data/projects/MAFAP/data/UNPS2009/GSEC14.dta")
+bike <- subset(sec14, h14q2 == "Bicycle")[c( "HHID",  "h14q3")]
+names(bike) <- c("HHID", "bike")
+bike$bike <-  bike$bike == "Yes"
+mobile <- subset(sec14, h14q2 == "Mobile phone")[c( "HHID",  "h14q3")]
+names(mobile) <- c("HHID", "mobile")
+mobile$mobile <-  mobile$mobile == "Yes"
+all2009 <- merge(all2009, bike, by="HHID")
+all2009 <- merge(all2009, mobile, by="HHID")
+
+
 ###
 
 inter <- aggregate(all2009[c("fert_use","w")],list(all2009$HHID, all2009$parcelID, all2009$plotID, all2009$season),max, na.rm=T)
